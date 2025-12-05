@@ -25,13 +25,14 @@ export const googleProvider = new GoogleAuthProvider();
 export const db = getFirestore(app);
 
 // Connect to emulator if in development
-let emulatorConnected = false;
-if (import.meta.env.DEV && !emulatorConnected) {
-  try {
-    connectFirestoreEmulator(db, "localhost", 9080);
-    emulatorConnected = true;
-    console.log("✅ Connected to Firestore Emulator");
-  } catch (error) {
-    console.warn("⚠️ Failed to connect to Firestore Emulator:", error);
-  }
-}
+// Connect to emulator if in development
+// let emulatorConnected = false;
+// if (import.meta.env.DEV && !emulatorConnected) {
+//   try {
+//     connectFirestoreEmulator(db, "localhost", 9080);
+//     emulatorConnected = true;
+//     console.log("✅ Connected to Firestore Emulator");
+//   } catch (error) {
+//     console.warn("⚠️ Failed to connect to Firestore Emulator:", error);
+//   }
+// }
