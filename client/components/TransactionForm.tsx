@@ -35,8 +35,6 @@ const transactionSchema = z.object({
   categoryId: z.string().min(1, "Category is required"),
   type: z.enum(["income", "expense"]),
   description: z.string().min(1, "Description is required"),
-  notes: z.string().optional(),
-  tags: z.string().optional(),
 });
 
 type TransactionFormData = z.infer<typeof transactionSchema>;
@@ -70,8 +68,6 @@ export default function TransactionForm({
       categoryId: transaction?.categoryId || "",
       type: transaction?.type || "expense",
       description: transaction?.description || "",
-      notes: transaction?.notes || "",
-      tags: transaction?.tags?.join(", ") || "",
     },
   });
 
@@ -84,8 +80,6 @@ export default function TransactionForm({
         categoryId: transaction.categoryId,
         type: transaction.type,
         description: transaction.description,
-        notes: transaction.notes || "",
-        tags: transaction.tags?.join(", ") || "",
       });
     } else {
       form.reset({
@@ -94,8 +88,6 @@ export default function TransactionForm({
         categoryId: "",
         type: "expense",
         description: "",
-        notes: "",
-        tags: "",
       });
     }
   }, [open, transaction, form]);
@@ -107,21 +99,12 @@ export default function TransactionForm({
   };
 
   const handleFormSubmit = (data: TransactionFormData) => {
-    const tagsArray = data.tags
-      ? data.tags
-          .split(",")
-          .map((t) => t.trim())
-          .filter(Boolean)
-      : undefined;
-
     const transactionData: Omit<Transaction, "id"> = {
       date: new Date(data.date).toISOString(),
       amount: parseFloat(data.amount),
       categoryId: data.categoryId,
       type: data.type,
       description: data.description,
-      notes: data.notes || undefined,
-      tags: tagsArray,
       createdAt: transaction?.createdAt || new Date().toISOString(),
     };
 
@@ -250,43 +233,6 @@ export default function TransactionForm({
                   <FormLabel>Description</FormLabel>
                   <FormControl>
                     <Input placeholder="e.g., Weekly groceries" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Notes */}
-            <FormField
-              control={form.control}
-              name="notes"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Notes (Optional)</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Add any additional notes..."
-                      rows={2}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Tags */}
-            <FormField
-              control={form.control}
-              name="tags"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Tags (Optional)</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="e.g., food, weekly, important (comma-separated)"
-                      {...field}
-                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
