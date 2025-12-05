@@ -9,7 +9,8 @@ import AuthLayout from "@/components/AuthLayout";
 
 export default function VerifyEmail() {
   const [isLoading, setIsLoading] = useState(false);
-  const { user, sendVerificationEmail, logout } = useAuth();
+  const [isChecking, setIsChecking] = useState(false);
+  const { user, sendVerificationEmail, logout, checkEmailVerified } = useAuth();
   const navigate = useNavigate();
 
   const handleResendVerification = async () => {
@@ -34,15 +35,29 @@ export default function VerifyEmail() {
   };
 
   if (!user) {
-      navigate("/login");
-      return null;
+    navigate("/login");
+    return null;
   }
 
   useEffect(() => {
-      if (user.emailVerified) {
-          navigate("/", { replace: true });
-      }
+    if (user.emailVerified) {
+      navigate("/", { replace: true });
+    }
   }, [user.emailVerified, navigate]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      checkEmailVerified();
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [checkEmailVerified]);
+
+  const handleCheckVerification = async () => {
+    setIsChecking(true);
+    await checkEmailVerified();
+    setIsChecking(false);
+  };
 
   return (
     <AuthLayout
@@ -73,6 +88,25 @@ export default function VerifyEmail() {
             Click the link in the email we sent you to verify your account. If
             you can't find it, check your spam folder.
           </p>
+
+          <Button
+            onClick={handleCheckVerification}
+            variant="outline"
+            className="w-full h-12 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+            disabled={isChecking}
+          >
+            {isChecking ? (
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                Checking...
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4" />
+                I've verified my email
+              </div>
+            )}
+          </Button>
 
           <Button
             onClick={handleResendVerification}

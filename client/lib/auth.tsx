@@ -41,6 +41,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   sendVerificationEmail: () => Promise<void>;
+  checkEmailVerified: () => Promise<void>;
   isLoading: boolean;
 }
 
@@ -87,7 +88,17 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
     if (mode === "verifyEmail" && oobCode) {
       applyActionCode(auth, oobCode)
-        .then(() => {
+        .then(async () => {
+          // Reload user to update emailVerified status
+          if (auth.currentUser) {
+            await auth.currentUser.reload();
+            setUser((prev) => {
+              if (prev) {
+                return { ...prev, emailVerified: true };
+              }
+              return prev;
+            });
+          }
           // Clear the URL parameters
           window.history.replaceState(
             {},
@@ -142,6 +153,20 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     await signInWithPopup(auth, googleProvider);
   };
 
+  const checkEmailVerified = async (): Promise<void> => {
+    if (auth.currentUser) {
+      await auth.currentUser.reload();
+      if (auth.currentUser.emailVerified) {
+        setUser((prev) => {
+          if (prev) {
+            return { ...prev, emailVerified: true };
+          }
+          return prev;
+        });
+      }
+    }
+  };
+
   const value: AuthContextType = {
     user,
     login,
@@ -150,6 +175,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     logout,
     resetPassword,
     sendVerificationEmail,
+    checkEmailVerified,
     isLoading,
   };
 
