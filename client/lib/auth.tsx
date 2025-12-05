@@ -17,6 +17,8 @@ import {
   setPersistence,
   browserLocalPersistence,
   browserSessionPersistence,
+  applyActionCode,
+  ActionCodeSettings,
 } from "firebase/auth";
 import { auth, googleProvider } from "./firebase";
 
@@ -78,6 +80,27 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     return unsubscribe;
   }, []);
 
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const mode = urlParams.get("mode");
+    const oobCode = urlParams.get("oobCode");
+
+    if (mode === "verifyEmail" && oobCode) {
+      applyActionCode(auth, oobCode)
+        .then(() => {
+          // Clear the URL parameters
+          window.history.replaceState(
+            {},
+            document.title,
+            window.location.pathname,
+          );
+        })
+        .catch((error) => {
+          console.error("Error applying action code:", error);
+        });
+    }
+  }, []);
+
   const login = async (
     email: string,
     password: string,
@@ -105,7 +128,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const sendVerificationEmail = async (): Promise<void> => {
     if (auth.currentUser) {
-      await sendEmailVerification(auth.currentUser);
+      const actionCodeSettings: ActionCodeSettings = {
+        url: `${window.location.origin}/verify-email`,
+        // Note: To prevent emails from going to spam, configure the email template in Firebase Console:
+        // Authentication > Templates > Email address verification > Customize
+        // Set a custom 'From' email address and improve the subject/content to avoid spam filters.
+      };
+      await sendEmailVerification(auth.currentUser, actionCodeSettings);
     }
   };
 
