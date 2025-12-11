@@ -107,7 +107,7 @@ export default function Login() {
             <Label htmlFor="password">Password</Label>
             <Link
               to="/forgot-password"
-              className="text-sm font-medium text-blue-600 hover:text-blue-500 transition-colors"
+              className="text-sm font-medium text-emerald-600 hover:text-emerald-500 transition-colors"
             >
               Forgot password?
             </Link>
@@ -156,7 +156,7 @@ export default function Login() {
 
         <Button
           type="submit"
-          className="w-full h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/25"
+          className="w-full h-12 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-700 hover:via-teal-700 hover:to-cyan-700 text-white font-medium transition-all duration-200 hover:shadow-lg hover:shadow-emerald-500/25"
           disabled={isLoading}
         >
           {isLoading ? (
@@ -186,18 +186,17 @@ export default function Login() {
         <Button
           type="button"
           onClick={handleGoogleSignIn}
-          variant="outline"
-          className="w-full h-12 border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900"
+          className="w-full h-12 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-700 hover:via-teal-700 hover:to-cyan-700 text-white font-medium transition-all duration-200 hover:shadow-lg hover:shadow-emerald-500/25"
           disabled={isLoading}
         >
           {isLoading ? (
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
               Please wait...
             </div>
           ) : (
             <div className="flex items-center gap-2">
-              <Chrome className="w-5 h-5 text-red-500" />
+              <Chrome className="w-5 h-5 text-white" />
               Google
             </div>
           )}
@@ -207,7 +206,7 @@ export default function Login() {
           Don't have an account?{" "}
           <Link
             to="/signup"
-            className="font-medium text-blue-600 hover:text-blue-500 transition-colors"
+            className="font-medium text-emerald-600 hover:text-emerald-500 transition-colors"
           >
             Sign up
           </Link>
