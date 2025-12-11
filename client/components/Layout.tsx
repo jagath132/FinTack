@@ -6,14 +6,19 @@ import {
   BarChart3,
   CreditCard,
   Tag,
+  Target,
+  Repeat,
+  FileText,
   Settings,
   LogOut,
   User,
+  Plus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
+import NotificationDropdown from "@/components/NotificationDropdown";
 
 interface LayoutProps {
   children: ReactNode;
@@ -33,6 +38,9 @@ export default function Layout({ children }: LayoutProps) {
     { path: "/", label: "Dashboard", icon: BarChart3 },
     { path: "/transactions", label: "Transactions", icon: CreditCard },
     { path: "/categories", label: "Categories", icon: Tag },
+    { path: "/budgets", label: "Budgets", icon: Target },
+    { path: "/recurring", label: "Recurring", icon: Repeat },
+    { path: "/reports", label: "Reports", icon: FileText },
     { path: "/settings", label: "Settings", icon: Settings },
   ];
 
@@ -115,6 +123,9 @@ export default function Layout({ children }: LayoutProps) {
                 </h2>
               </div>
 
+              {/* Notifications */}
+              <NotificationDropdown />
+
               {/* User Menu */}
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
@@ -152,6 +163,20 @@ export default function Layout({ children }: LayoutProps) {
           onClick={() => setSidebarOpen(false)}
         />
       )}
+
+      {/* Mobile Floating Action Button */}
+      <div className="md:hidden fixed bottom-6 right-6 z-40">
+        <Button
+          size="lg"
+          className="h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-shadow"
+          onClick={() => {
+            // Navigate to transactions page with add modal open
+            window.location.href = "/transactions";
+          }}
+        >
+          <Plus className="w-6 h-6" />
+        </Button>
+      </div>
     </div>
   );
 }

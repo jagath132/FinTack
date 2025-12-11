@@ -17,7 +17,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
-import { Plus, Trash2, Edit, Search } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  Edit,
+  Search,
+  ArrowUpRight,
+  ArrowDownLeft,
+} from "lucide-react";
 import TransactionForm from "@/components/TransactionForm";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
 import {
@@ -273,90 +280,168 @@ export default function Transactions() {
         )}
       </Card>
 
-      {/* Transactions Table */}
+      {/* Transactions Table/List */}
       {filteredTransactions.length > 0 ? (
-        <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredTransactions.map((txn) => (
-                  <TableRow
-                    key={txn.id}
-                    className="hover:bg-slate-50 dark:hover:bg-slate-700/50"
-                  >
-                    <TableCell className="font-medium">
-                      {new Date(txn.date).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium">{txn.description}</p>
-                        {txn.notes && (
-                          <p className="text-sm text-slate-500 dark:text-slate-400">
-                            {txn.notes}
-                          </p>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>{getCategoryName(txn.categoryId)}</TableCell>
-                    <TableCell>
-                      <span
-                        className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold ${
-                          txn.type === "income"
-                            ? "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400"
-                            : "bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400"
-                        }`}
-                      >
-                        {txn.type === "income" ? "+" : "-"}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right font-semibold">
-                      <span
-                        className={
-                          txn.type === "income"
-                            ? "text-green-600 dark:text-green-400"
-                            : "text-red-600 dark:text-red-400"
-                        }
-                      >
-                        {txn.type === "income" ? "+" : "-"}₹
-                        {txn.amount.toLocaleString("en-IN", {
-                          maximumFractionDigits: 2,
-                        })}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex gap-2 justify-end">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEditClick(txn)}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteClick(txn.id)}
-                        >
-                          <Trash2 className="w-4 h-4 text-red-600 dark:text-red-400" />
-                        </Button>
-                      </div>
-                    </TableCell>
+        <>
+          {/* Desktop Table View */}
+          <div className="hidden md:block bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {filteredTransactions.map((txn) => (
+                    <TableRow
+                      key={txn.id}
+                      className="hover:bg-slate-50 dark:hover:bg-slate-700/50"
+                    >
+                      <TableCell className="font-medium">
+                        {new Date(txn.date).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          <p className="font-medium">{txn.description}</p>
+                          {txn.notes && (
+                            <p className="text-sm text-slate-500 dark:text-slate-400">
+                              {txn.notes}
+                            </p>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>{getCategoryName(txn.categoryId)}</TableCell>
+                      <TableCell>
+                        <span
+                          className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold ${
+                            txn.type === "income"
+                              ? "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400"
+                              : "bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400"
+                          }`}
+                        >
+                          {txn.type === "income" ? "+" : "-"}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right font-semibold">
+                        <span
+                          className={
+                            txn.type === "income"
+                              ? "text-green-600 dark:text-green-400"
+                              : "text-red-600 dark:text-red-400"
+                          }
+                        >
+                          {txn.type === "income" ? "+" : "-"}₹
+                          {txn.amount.toLocaleString("en-IN", {
+                            maximumFractionDigits: 2,
+                          })}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex gap-2 justify-end">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditClick(txn)}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteClick(txn.id)}
+                          >
+                            <Trash2 className="w-4 h-4 text-red-600 dark:text-red-400" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </div>
-        </div>
+
+          {/* Mobile Card View */}
+          <div className="md:hidden space-y-3">
+            {filteredTransactions.map((txn) => (
+              <Card
+                key={txn.id}
+                className="p-4 hover:shadow-md transition-shadow"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-3 flex-1">
+                    <div
+                      className={`p-2 rounded-lg flex-shrink-0 ${
+                        txn.type === "income"
+                          ? "bg-green-100 dark:bg-green-900/20"
+                          : "bg-red-100 dark:bg-red-900/20"
+                      }`}
+                    >
+                      {txn.type === "income" ? (
+                        <ArrowUpRight className="w-4 h-4 text-green-600 dark:text-green-400" />
+                      ) : (
+                        <ArrowDownLeft className="w-4 h-4 text-red-600 dark:text-red-400" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="font-medium text-slate-900 dark:text-white truncate">
+                          {txn.description}
+                        </p>
+                        <span
+                          className={`font-bold text-lg ${
+                            txn.type === "income"
+                              ? "text-green-600 dark:text-green-400"
+                              : "text-red-600 dark:text-red-400"
+                          }`}
+                        >
+                          {txn.type === "income" ? "+" : "-"}₹
+                          {txn.amount.toLocaleString("en-IN", {
+                            maximumFractionDigits: 2,
+                          })}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 mb-2">
+                        <span>{getCategoryName(txn.categoryId)}</span>
+                        <span>•</span>
+                        <span>{new Date(txn.date).toLocaleDateString()}</span>
+                      </div>
+                      {txn.notes && (
+                        <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2">
+                          {txn.notes}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex gap-1 flex-shrink-0">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleEditClick(txn)}
+                      className="h-8 w-8 p-0"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDeleteClick(txn.id)}
+                      className="h-8 w-8 p-0 text-red-600 dark:text-red-400"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </>
       ) : (
         <Card className="p-8 text-center">
           <p className="text-slate-600 dark:text-slate-400 mb-4">
