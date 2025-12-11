@@ -3,15 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertTriangle, Download, Upload, Trash2 } from "lucide-react";
+import { AlertTriangle, Upload, Trash2 } from "lucide-react";
 import CSVImportDialog from "@/components/CSVImportDialog";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
 import {
@@ -22,22 +15,14 @@ import {
   saveCategory,
   saveTransaction,
 } from "@/lib/storage";
-import {
-  transactionsToCSV,
-  categoriesToCSV,
-  downloadCSV,
-  csvToTransactions,
-} from "@/lib/csv";
 import { Transaction, Category } from "@/lib/types";
+import { csvToTransactions } from "@/lib/csv";
 import { toast } from "sonner";
 
 export default function Settings() {
   const navigate = useNavigate();
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
-  const [exportOption, setExportOption] = useState("transactions");
-  const [exportDateFrom, setExportDateFrom] = useState("");
-  const [exportDateTo, setExportDateTo] = useState("");
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -132,46 +117,6 @@ export default function Settings() {
     }
   };
 
-  const handleExport = () => {
-    let data = transactions;
-
-    if (exportDateFrom) {
-      const fromDate = new Date(exportDateFrom);
-      data = data.filter((txn) => new Date(txn.date) >= fromDate);
-    }
-
-    if (exportDateTo) {
-      const toDate = new Date(exportDateTo);
-      data = data.filter((txn) => new Date(txn.date) <= toDate);
-    }
-
-    if (data.length === 0) {
-      toast.error("No transactions found for export");
-      return;
-    }
-
-    let csv = "";
-    let filename = "";
-
-    if (exportOption === "transactions" || exportOption === "both") {
-      csv += transactionsToCSV(data, categories);
-      filename = `transactions_${new Date().toISOString().split("T")[0]}.csv`;
-    }
-
-    if (exportOption === "categories" || exportOption === "both") {
-      if (csv) csv += "\n\n---CATEGORIES---\n";
-      csv += categoriesToCSV(categories);
-      if (filename.includes("transactions")) {
-        filename = `fintrack_export_${new Date().toISOString().split("T")[0]}.csv`;
-      } else {
-        filename = `categories_${new Date().toISOString().split("T")[0]}.csv`;
-      }
-    }
-
-    downloadCSV(filename, csv);
-    toast.success(`Exported ${data.length} record(s)`);
-  };
-
   const handleResetConfirm = async () => {
     try {
       await resetAllData();
@@ -199,7 +144,7 @@ export default function Settings() {
           Settings
         </h1>
         <p className="text-slate-600 dark:text-slate-400 mt-1">
-          Manage your data, import/export, and reset your account
+          Manage your account settings, import data, and reset your account
         </p>
       </div>
 
@@ -221,100 +166,124 @@ export default function Settings() {
         </Button>
       </Card>
 
-      {/* Export Section */}
+      {/* User Settings Section */}
       <Card className="p-6 space-y-4">
         <div className="flex items-center gap-3 mb-2">
-          <Download className="w-5 h-5 text-green-600 dark:text-green-400" />
+          <div className="w-5 h-5 rounded-full bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 flex items-center justify-center">
+            <span className="text-white text-xs font-bold">U</span>
+          </div>
           <h2 className="text-xl font-semibold text-slate-900 dark:text-white">
-            Export Data
+            User Settings
           </h2>
         </div>
         <p className="text-slate-600 dark:text-slate-400">
-          Export your financial data to a CSV file for backup or analysis.
+          Manage your account preferences and personal information.
         </p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {/* Export Option */}
-          <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              What to export:
-            </label>
-            <Select value={exportOption} onValueChange={setExportOption}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="transactions">Transactions Only</SelectItem>
-                <SelectItem value="categories">Categories Only</SelectItem>
-                <SelectItem value="both">
-                  Both Transactions & Categories
-                </SelectItem>
-              </SelectContent>
-            </Select>
+        <div className="space-y-4">
+          {/* Profile Information */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                Display Name
+              </label>
+              <Input
+                type="text"
+                placeholder="Your display name"
+                defaultValue="User"
+                className="w-full"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                Email Address
+              </label>
+              <Input
+                type="email"
+                placeholder="your.email@example.com"
+                defaultValue="user@example.com"
+                className="w-full"
+                disabled
+              />
+            </div>
           </div>
 
-          {/* Empty state for now */}
-          <div />
+          {/* Preferences */}
+          <div className="space-y-3">
+            <h3 className="text-lg font-medium text-slate-900 dark:text-white">
+              Preferences
+            </h3>
 
-          {exportOption !== "categories" && (
-            <>
-              {/* Date From */}
+            <div className="flex items-center justify-between p-3 border border-slate-200 dark:border-slate-700 rounded-lg">
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                  From Date (Optional):
-                </label>
-                <Input
-                  type="date"
-                  value={exportDateFrom}
-                  onChange={(e) => setExportDateFrom(e.target.value)}
-                />
+                <p className="font-medium text-slate-900 dark:text-white">
+                  Email Notifications
+                </p>
+                <p className="text-sm text-slate-600 dark:text-slate-400">
+                  Receive email updates about your account
+                </p>
               </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="email-notifications"
+                  className="w-4 h-4 text-emerald-600 bg-slate-100 border-slate-300 rounded focus:ring-emerald-500 dark:focus:ring-emerald-600 dark:ring-offset-slate-800 focus:ring-2 dark:bg-slate-700 dark:border-slate-600"
+                  defaultChecked
+                />
+                <label htmlFor="email-notifications" className="sr-only">
+                  Email Notifications
+                </label>
+              </div>
+            </div>
 
-              {/* Date To */}
+            <div className="flex items-center justify-between p-3 border border-slate-200 dark:border-slate-700 rounded-lg">
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                  To Date (Optional):
-                </label>
-                <Input
-                  type="date"
-                  value={exportDateTo}
-                  onChange={(e) => setExportDateTo(e.target.value)}
-                />
+                <p className="font-medium text-slate-900 dark:text-white">
+                  Budget Alerts
+                </p>
+                <p className="text-sm text-slate-600 dark:text-slate-400">
+                  Get notified when approaching budget limits
+                </p>
               </div>
-            </>
-          )}
-        </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="budget-alerts"
+                  className="w-4 h-4 text-emerald-600 bg-slate-100 border-slate-300 rounded focus:ring-emerald-500 dark:focus:ring-emerald-600 dark:ring-offset-slate-800 focus:ring-2 dark:bg-slate-700 dark:border-slate-600"
+                  defaultChecked
+                />
+                <label htmlFor="budget-alerts" className="sr-only">
+                  Budget Alerts
+                </label>
+              </div>
+            </div>
 
-        <div className="flex gap-2">
-          <Button
-            onClick={handleExport}
-            className="gap-2"
-            disabled={
-              transactions.length === 0 && exportOption === "transactions"
-            }
-          >
-            <Download className="w-4 h-4" />
-            Export as CSV
-          </Button>
-          {exportDateFrom || exportDateTo ? (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setExportDateFrom("");
-                setExportDateTo("");
-              }}
-            >
-              Clear Dates
-            </Button>
-          ) : null}
-        </div>
+            <div className="flex items-center justify-between p-3 border border-slate-200 dark:border-slate-700 rounded-lg">
+              <div>
+                <p className="font-medium text-slate-900 dark:text-white">
+                  Dark Mode
+                </p>
+                <p className="text-sm text-slate-600 dark:text-slate-400">
+                  Toggle between light and dark themes
+                </p>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="dark-mode"
+                  className="w-4 h-4 text-emerald-600 bg-slate-100 border-slate-300 rounded focus:ring-emerald-500 dark:focus:ring-emerald-600 dark:ring-offset-slate-800 focus:ring-2 dark:bg-slate-700 dark:border-slate-600"
+                />
+                <label htmlFor="dark-mode" className="sr-only">
+                  Dark Mode
+                </label>
+              </div>
+            </div>
+          </div>
 
-        <p className="text-xs text-slate-500 dark:text-slate-400">
-          {transactions.length > 0
-            ? `Total transactions: ${transactions.length}`
-            : "No transactions to export"}
-        </p>
+          <div className="flex gap-2 pt-4">
+            <Button className="gap-2">Save Changes</Button>
+          </div>
+        </div>
       </Card>
 
       {/* Reset Section */}
