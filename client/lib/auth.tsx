@@ -65,14 +65,19 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      if (firebaseUser) {
-        setUser({
-          id: firebaseUser.uid,
-          email: firebaseUser.email!,
-          displayName: firebaseUser.displayName || undefined,
-          emailVerified: firebaseUser.emailVerified,
-        });
-      } else {
+      try {
+        if (firebaseUser) {
+          setUser({
+            id: firebaseUser.uid,
+            email: firebaseUser.email!,
+            displayName: firebaseUser.displayName || undefined,
+            emailVerified: firebaseUser.emailVerified,
+          });
+        } else {
+          setUser(null);
+        }
+      } catch (error) {
+        console.error("Error processing auth state:", error);
         setUser(null);
       }
       setIsLoading(false);
@@ -117,12 +122,45 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     password: string,
     rememberMe = false,
   ): Promise<void> => {
-    // Set persistence based on remember me option
-    await setPersistence(
-      auth,
-      rememberMe ? browserLocalPersistence : browserSessionPersistence,
-    );
-    await signInWithEmailAndPassword(auth, email, password);
+    try {
+      // Check if storage is available before setting persistence
+      const testStorage = () => {
+        try {
+          const test = "__storage_test__";
+          if (rememberMe) {
+            localStorage.setItem(test, test);
+            localStorage.removeItem(test);
+          } else {
+            sessionStorage.setItem(test, test);
+            sessionStorage.removeItem(test);
+          }
+          return true;
+        } catch (e) {
+          return false;
+        }
+      };
+
+      if (testStorage()) {
+        // Set persistence based on remember me option
+        await setPersistence(
+          auth,
+          rememberMe ? browserLocalPersistence : browserSessionPersistence,
+        );
+      } else {
+        // Fallback: don't set persistence if storage is not available
+        console.warn(
+          "Browser storage not available, using default persistence",
+        );
+      }
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (error: any) {
+      // If persistence setting fails, try without it
+      if (error.code === "auth/invalid-persistence-type") {
+        await signInWithEmailAndPassword(auth, email, password);
+      } else {
+        throw error;
+      }
+    }
   };
 
   const signup = async (email: string, password: string): Promise<void> => {
@@ -150,7 +188,32 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   const loginWithGoogle = async (): Promise<void> => {
-    await signInWithPopup(auth, googleProvider);
+    try {
+      // Try popup first, but handle storage issues
+      const testStorage = () => {
+        try {
+          const test = "__storage_test__";
+          sessionStorage.setItem(test, test);
+          sessionStorage.removeItem(test);
+          return true;
+        } catch (e) {
+          return false;
+        }
+      };
+
+      if (!testStorage()) {
+        // If sessionStorage is not available, show a warning but continue
+        console.warn(
+          "Browser storage not available, authentication may not persist across sessions",
+        );
+      }
+
+      await signInWithPopup(auth, googleProvider);
+    } catch (error: any) {
+      // If popup fails due to storage or other issues, we could potentially fall back to redirect
+      // but for now, re-throw the error
+      throw error;
+    }
   };
 
   const checkEmailVerified = async (): Promise<void> => {

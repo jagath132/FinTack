@@ -18,6 +18,29 @@ const app = initializeApp(firebaseConfig);
 // Initialize Firebase Authentication and get a reference to the service
 export const auth = getAuth(app);
 
+// Add error handling for auth state persistence issues
+auth.onAuthStateChanged(
+  (user) => {
+    // This helps handle cases where auth state can't be properly restored
+    if (user) {
+      console.log("Auth state restored for user:", user.email);
+    }
+  },
+  (error: any) => {
+    console.error("Auth state change error:", error);
+    // Handle storage-related errors gracefully
+    if (
+      error?.code === "auth/invalid-persistence-type" ||
+      error?.message?.includes("sessionStorage") ||
+      error?.message?.includes("localStorage")
+    ) {
+      console.warn(
+        "Storage persistence issue detected, authentication may not persist",
+      );
+    }
+  },
+);
+
 // Initialize Google Auth Provider
 export const googleProvider = new GoogleAuthProvider();
 

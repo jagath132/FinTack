@@ -19,7 +19,6 @@ import Transactions from "./pages/Transactions";
 import Categories from "./pages/Categories";
 import Budgets from "./pages/Budgets";
 import Recurring from "./pages/Recurring";
-import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
@@ -32,7 +31,9 @@ const App = () => (
         <TooltipProvider>
           <Toaster />
           <Sonner />
-          <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+          <BrowserRouter
+            future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+          >
             <Routes>
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
@@ -52,7 +53,6 @@ const App = () => (
                         <Route path="/categories" element={<Categories />} />
                         <Route path="/budgets" element={<Budgets />} />
                         <Route path="/recurring" element={<Recurring />} />
-                        <Route path="/reports" element={<Reports />} />
                         <Route path="/settings" element={<Settings />} />
                         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                         <Route path="*" element={<NotFound />} />

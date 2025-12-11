@@ -2,7 +2,16 @@ import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Plus, Trash2, Edit, Search } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  Edit,
+  Search,
+  Grid3X3,
+  List,
+  X,
+  Filter,
+} from "lucide-react";
 import CategoryForm from "@/components/CategoryForm";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
 import {
@@ -28,6 +37,12 @@ export default function Categories() {
 
   // Search
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchType, setSearchType] = useState<"all" | "income" | "expense">(
+    "all",
+  );
+
+  // View mode
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   useEffect(() => {
     const loadData = async () => {
@@ -106,15 +121,22 @@ export default function Categories() {
 
   const filteredCategories = useMemo(() => {
     return categories.filter((cat) => {
+      // Search query filter
       if (
         searchQuery &&
         !cat.name.toLowerCase().includes(searchQuery.toLowerCase())
       ) {
         return false;
       }
+
+      // Type filter
+      if (searchType !== "all" && cat.type !== searchType) {
+        return false;
+      }
+
       return true;
     });
-  }, [categories, searchQuery]);
+  }, [categories, searchQuery, searchType]);
 
   const incomeCategories = filteredCategories.filter(
     (c) => c.type === "income",
@@ -122,6 +144,24 @@ export default function Categories() {
   const expenseCategories = filteredCategories.filter(
     (c) => c.type === "expense",
   );
+
+  const highlightText = (text: string, query: string) => {
+    if (!query) return text;
+    const regex = new RegExp(`(${query})`, "gi");
+    const parts = text.split(regex);
+    return parts.map((part, index) =>
+      regex.test(part) ? (
+        <span
+          key={index}
+          className="bg-yellow-200 dark:bg-yellow-800 px-1 rounded"
+        >
+          {part}
+        </span>
+      ) : (
+        part
+      ),
+    );
+  };
 
   const CategoryCard = ({ category }: { category: Category }) => {
     const count = getCategoryTransactionCount(category.id);
@@ -140,7 +180,7 @@ export default function Categories() {
                 style={{ backgroundColor: category.color }}
               />
               <h3 className="font-semibold text-slate-900 dark:text-white text-lg">
-                {category.name}
+                {highlightText(category.name, searchQuery)}
               </h3>
             </div>
             <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
@@ -191,6 +231,82 @@ export default function Categories() {
     );
   };
 
+  const CategoryListItem = ({ category }: { category: Category }) => {
+    const count = getCategoryTransactionCount(category.id);
+    const totalAmount = getTransactionsForCategory(category.id).reduce(
+      (sum, txn) => sum + txn.amount,
+      0,
+    );
+
+    return (
+      <Card className="p-4 hover:shadow-md transition-all animate-slide-in">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4 flex-1">
+            <div
+              className="w-5 h-5 rounded-full flex-shrink-0"
+              style={{ backgroundColor: category.color }}
+            />
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-slate-900 dark:text-white truncate">
+                {highlightText(category.name, searchQuery)}
+              </h3>
+              <div className="flex items-center gap-4 text-sm text-slate-600 dark:text-slate-400">
+                <span>
+                  {count} transaction{count !== 1 ? "s" : ""}
+                </span>
+                {count > 0 && (
+                  <span className="font-medium">
+                    ₹
+                    {totalAmount.toLocaleString("en-IN", {
+                      maximumFractionDigits: 2,
+                    })}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <span
+              className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold ${
+                category.type === "income"
+                  ? "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400"
+                  : "bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400"
+              }`}
+            >
+              {category.type}
+            </span>
+
+            <div className="flex gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleEditClick(category)}
+                className="h-8 w-8 p-0"
+              >
+                <Edit className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={count > 0}
+                onClick={() => handleDeleteClick(category.id)}
+                className="h-8 w-8 p-0 text-red-600 dark:text-red-400"
+                title={
+                  count > 0
+                    ? "Delete all transactions in this category first"
+                    : ""
+                }
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      </Card>
+    );
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
@@ -215,15 +331,101 @@ export default function Categories() {
         </Button>
       </div>
 
-      {/* Search */}
-      <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-        <Input
-          placeholder="Search categories..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10"
-        />
+      {/* Search and Filters */}
+      <div className="space-y-4">
+        {/* Search Bar */}
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+            <Input
+              placeholder="Search categories by name..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-12 pr-10 py-3 text-base border-2 focus:border-blue-500 transition-colors"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors"
+              >
+                <X className="w-4 h-4 text-slate-400" />
+              </button>
+            )}
+          </div>
+
+          {/* Type Filter */}
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-slate-500" />
+            <div className="flex rounded-lg border border-slate-200 dark:border-slate-700 p-1">
+              <Button
+                variant={searchType === "all" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setSearchType("all")}
+                className="px-3"
+              >
+                All
+              </Button>
+              <Button
+                variant={searchType === "income" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setSearchType("income")}
+                className="px-3 text-green-600"
+              >
+                Income
+              </Button>
+              <Button
+                variant={searchType === "expense" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setSearchType("expense")}
+                className="px-3 text-red-600"
+              >
+                Expense
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* View Toggle */}
+        <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+          <div className="flex items-center gap-4">
+            <div className="flex rounded-lg border border-slate-200 dark:border-slate-700 p-1">
+              <Button
+                variant={viewMode === "grid" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setViewMode("grid")}
+                className="gap-2"
+              >
+                <Grid3X3 className="w-4 h-4" />
+                <span className="hidden sm:inline">Grid</span>
+              </Button>
+              <Button
+                variant={viewMode === "list" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setViewMode("list")}
+                className="gap-2"
+              >
+                <List className="w-4 h-4" />
+                <span className="hidden sm:inline">List</span>
+              </Button>
+            </div>
+          </div>
+
+          {/* Clear Filters */}
+          {(searchQuery || searchType !== "all") && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setSearchQuery("");
+                setSearchType("all");
+              }}
+              className="gap-2 text-slate-600 dark:text-slate-400"
+            >
+              <X className="w-4 h-4" />
+              Clear Filters
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Income Categories */}
@@ -235,11 +437,19 @@ export default function Categories() {
               Income Categories
             </h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {incomeCategories.map((cat) => (
-              <CategoryCard key={cat.id} category={cat} />
-            ))}
-          </div>
+          {viewMode === "grid" ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {incomeCategories.map((cat) => (
+                <CategoryCard key={cat.id} category={cat} />
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {incomeCategories.map((cat) => (
+                <CategoryListItem key={cat.id} category={cat} />
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -252,11 +462,19 @@ export default function Categories() {
               Expense Categories
             </h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {expenseCategories.map((cat) => (
-              <CategoryCard key={cat.id} category={cat} />
-            ))}
-          </div>
+          {viewMode === "grid" ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {expenseCategories.map((cat) => (
+                <CategoryCard key={cat.id} category={cat} />
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {expenseCategories.map((cat) => (
+                <CategoryListItem key={cat.id} category={cat} />
+              ))}
+            </div>
+          )}
         </div>
       )}
 
