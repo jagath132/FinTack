@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle, Upload, Trash2 } from "lucide-react";
 import CSVImportDialog from "@/components/CSVImportDialog";
@@ -26,6 +27,22 @@ export default function Settings() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // User settings state
+  const [displayName, setDisplayName] = useState("User");
+  const [emailNotifications, setEmailNotifications] = useState(true);
+  const [budgetAlerts, setBudgetAlerts] = useState(true);
+  const [darkMode, setDarkMode] = useState(() => {
+    // Check localStorage for theme preference
+    if (typeof window !== "undefined") {
+      return (
+        localStorage.getItem("theme") === "dark" ||
+        (!localStorage.getItem("theme") &&
+          window.matchMedia("(prefers-color-scheme: dark)").matches)
+      );
+    }
+    return false;
+  });
 
   useEffect(() => {
     const loadData = async () => {
@@ -136,6 +153,42 @@ export default function Settings() {
     }
   };
 
+  const handleSaveSettings = () => {
+    // Save settings to localStorage
+    localStorage.setItem(
+      "userSettings",
+      JSON.stringify({
+        displayName,
+        emailNotifications,
+        budgetAlerts,
+      }),
+    );
+
+    toast.success("Settings saved successfully!");
+  };
+
+  const handleThemeToggle = (checked: boolean) => {
+    setDarkMode(checked);
+    const theme = checked ? "dark" : "light";
+    localStorage.setItem("theme", theme);
+
+    // Apply theme to document
+    if (checked) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  };
+
+  // Apply theme on component mount
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, [darkMode]);
+
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
@@ -190,7 +243,8 @@ export default function Settings() {
               <Input
                 type="text"
                 placeholder="Your display name"
-                defaultValue="User"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
                 className="w-full"
               />
             </div>
@@ -223,17 +277,11 @@ export default function Settings() {
                   Receive email updates about your account
                 </p>
               </div>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="email-notifications"
-                  className="w-4 h-4 text-emerald-600 bg-slate-100 border-slate-300 rounded focus:ring-emerald-500 dark:focus:ring-emerald-600 dark:ring-offset-slate-800 focus:ring-2 dark:bg-slate-700 dark:border-slate-600"
-                  defaultChecked
-                />
-                <label htmlFor="email-notifications" className="sr-only">
-                  Email Notifications
-                </label>
-              </div>
+              <Switch
+                id="email-notifications"
+                checked={emailNotifications}
+                onCheckedChange={setEmailNotifications}
+              />
             </div>
 
             <div className="flex items-center justify-between p-3 border border-slate-200 dark:border-slate-700 rounded-lg">
@@ -245,17 +293,11 @@ export default function Settings() {
                   Get notified when approaching budget limits
                 </p>
               </div>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="budget-alerts"
-                  className="w-4 h-4 text-emerald-600 bg-slate-100 border-slate-300 rounded focus:ring-emerald-500 dark:focus:ring-emerald-600 dark:ring-offset-slate-800 focus:ring-2 dark:bg-slate-700 dark:border-slate-600"
-                  defaultChecked
-                />
-                <label htmlFor="budget-alerts" className="sr-only">
-                  Budget Alerts
-                </label>
-              </div>
+              <Switch
+                id="budget-alerts"
+                checked={budgetAlerts}
+                onCheckedChange={setBudgetAlerts}
+              />
             </div>
 
             <div className="flex items-center justify-between p-3 border border-slate-200 dark:border-slate-700 rounded-lg">
@@ -267,21 +309,18 @@ export default function Settings() {
                   Toggle between light and dark themes
                 </p>
               </div>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="dark-mode"
-                  className="w-4 h-4 text-emerald-600 bg-slate-100 border-slate-300 rounded focus:ring-emerald-500 dark:focus:ring-emerald-600 dark:ring-offset-slate-800 focus:ring-2 dark:bg-slate-700 dark:border-slate-600"
-                />
-                <label htmlFor="dark-mode" className="sr-only">
-                  Dark Mode
-                </label>
-              </div>
+              <Switch
+                id="dark-mode"
+                checked={darkMode}
+                onCheckedChange={handleThemeToggle}
+              />
             </div>
           </div>
 
           <div className="flex gap-2 pt-4">
-            <Button className="gap-2">Save Changes</Button>
+            <Button onClick={handleSaveSettings} className="gap-2">
+              Save Changes
+            </Button>
           </div>
         </div>
       </Card>
