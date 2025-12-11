@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle, Upload, Trash2 } from "lucide-react";
 import CSVImportDialog from "@/components/CSVImportDialog";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
+import ChangePasswordDialog from "@/components/ChangePasswordDialog";
 import {
   getAllTransactions,
   getAllCategories,
@@ -15,6 +16,9 @@ import {
   resetAllData,
   saveCategory,
   saveTransaction,
+  getUserSettings,
+  saveUserSettings,
+  UserSettings,
 } from "@/lib/storage";
 import { Transaction, Category } from "@/lib/types";
 import { csvToTransactions } from "@/lib/csv";
@@ -24,25 +28,16 @@ export default function Settings() {
   const navigate = useNavigate();
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
 
   // User settings state
-  const [displayName, setDisplayName] = useState("User");
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [budgetAlerts, setBudgetAlerts] = useState(true);
-  const [darkMode, setDarkMode] = useState(() => {
-    // Check localStorage for theme preference
-    if (typeof window !== "undefined") {
-      return (
-        localStorage.getItem("theme") === "dark" ||
-        (!localStorage.getItem("theme") &&
-          window.matchMedia("(prefers-color-scheme: dark)").matches)
-      );
-    }
-    return false;
-  });
+  const [darkMode, setDarkMode] = useState(false);
+  const [settingsLoading, setSettingsLoading] = useState(true);
 
   useEffect(() => {
     const loadData = async () => {
@@ -60,6 +55,24 @@ export default function Settings() {
       }
     };
     loadData();
+  }, []);
+
+  useEffect(() => {
+    const loadUserSettings = async () => {
+      try {
+        const settings = await getUserSettings();
+        if (settings) {
+          setEmailNotifications(settings.emailNotifications ?? true);
+          setBudgetAlerts(settings.budgetAlerts ?? true);
+          setDarkMode(settings.darkMode ?? false);
+        }
+      } catch (error) {
+        console.error("Error loading user settings:", error);
+      } finally {
+        setSettingsLoading(false);
+      }
+    };
+    loadUserSettings();
   }, []);
 
   const handleImport = async (mapping: any, csvData: any) => {
@@ -153,30 +166,46 @@ export default function Settings() {
     }
   };
 
-  const handleSaveSettings = () => {
-    // Save settings to localStorage
-    localStorage.setItem(
-      "userSettings",
-      JSON.stringify({
-        displayName,
+  const handleSaveSettings = async () => {
+    try {
+      await saveUserSettings({
         emailNotifications,
         budgetAlerts,
-      }),
-    );
-
-    toast.success("Settings saved successfully!");
+        darkMode,
+      });
+      toast.success("Settings saved successfully!");
+    } catch (error) {
+      console.error("Error saving settings:", error);
+      toast.error("Failed to save settings. Please try again.");
+    }
   };
 
-  const handleThemeToggle = (checked: boolean) => {
+  const handleThemeToggle = async (checked: boolean) => {
     setDarkMode(checked);
-    const theme = checked ? "dark" : "light";
-    localStorage.setItem("theme", theme);
 
-    // Apply theme to document
+    // Apply theme to document immediately
     if (checked) {
       document.documentElement.classList.add("dark");
     } else {
       document.documentElement.classList.remove("dark");
+    }
+
+    // Save to Firebase
+    try {
+      await saveUserSettings({
+        emailNotifications,
+        budgetAlerts,
+        darkMode: checked,
+      });
+    } catch (error) {
+      console.error("Error saving theme setting:", error);
+      // Revert on error
+      setDarkMode(!checked);
+      if (!checked) {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
     }
   };
 
@@ -220,110 +249,152 @@ export default function Settings() {
       </Card>
 
       {/* User Settings Section */}
-      <Card className="p-6 space-y-4">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="w-5 h-5 rounded-full bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 flex items-center justify-center">
-            <span className="text-white text-xs font-bold">U</span>
-          </div>
-          <h2 className="text-xl font-semibold text-slate-900 dark:text-white">
-            User Settings
-          </h2>
-        </div>
-        <p className="text-slate-600 dark:text-slate-400">
-          Manage your account preferences and personal information.
-        </p>
-
-        <div className="space-y-4">
-          {/* Profile Information */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                Display Name
-              </label>
-              <Input
-                type="text"
-                placeholder="Your display name"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                className="w-full"
-              />
+      <div className="space-y-6">
+        {/* Preferences */}
+        <Card className="p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center">
+              <span className="text-blue-600 dark:text-blue-400">⚙️</span>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                Email Address
-              </label>
-              <Input
-                type="email"
-                placeholder="your.email@example.com"
-                defaultValue="user@example.com"
-                className="w-full"
-                disabled
-              />
+              <h2 className="text-xl font-semibold text-slate-900 dark:text-white">
+                Preferences
+              </h2>
+              <p className="text-slate-600 dark:text-slate-400">
+                Customize your app experience and notifications
+              </p>
             </div>
           </div>
 
-          {/* Preferences */}
-          <div className="space-y-3">
-            <h3 className="text-lg font-medium text-slate-900 dark:text-white">
-              Preferences
-            </h3>
-
-            <div className="flex items-center justify-between p-3 border border-slate-200 dark:border-slate-700 rounded-lg">
-              <div>
-                <p className="font-medium text-slate-900 dark:text-white">
-                  Email Notifications
-                </p>
-                <p className="text-sm text-slate-600 dark:text-slate-400">
-                  Receive email updates about your account
-                </p>
+          <div className="space-y-4">
+            {/* Appearance */}
+            <div>
+              <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-4">
+                Appearance
+              </h3>
+              <div className="flex items-center justify-between p-4 border border-slate-200 dark:border-slate-700 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                    {darkMode ? "🌙" : "☀️"}
+                  </div>
+                  <div>
+                    <p className="font-medium text-slate-900 dark:text-white">
+                      Dark Mode
+                    </p>
+                    <p className="text-sm text-slate-600 dark:text-slate-400">
+                      Switch between light and dark themes
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  id="dark-mode"
+                  checked={darkMode}
+                  onCheckedChange={handleThemeToggle}
+                />
               </div>
-              <Switch
-                id="email-notifications"
-                checked={emailNotifications}
-                onCheckedChange={setEmailNotifications}
-              />
             </div>
 
-            <div className="flex items-center justify-between p-3 border border-slate-200 dark:border-slate-700 rounded-lg">
-              <div>
-                <p className="font-medium text-slate-900 dark:text-white">
-                  Budget Alerts
-                </p>
-                <p className="text-sm text-slate-600 dark:text-slate-400">
-                  Get notified when approaching budget limits
-                </p>
-              </div>
-              <Switch
-                id="budget-alerts"
-                checked={budgetAlerts}
-                onCheckedChange={setBudgetAlerts}
-              />
-            </div>
+            {/* Notifications */}
+            <div>
+              <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-4">
+                Notifications
+              </h3>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-4 border border-slate-200 dark:border-slate-700 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
+                      📧
+                    </div>
+                    <div>
+                      <p className="font-medium text-slate-900 dark:text-white">
+                        Email Notifications
+                      </p>
+                      <p className="text-sm text-slate-600 dark:text-slate-400">
+                        Receive email updates about your account activity
+                      </p>
+                    </div>
+                  </div>
+                  <Switch
+                    id="email-notifications"
+                    checked={emailNotifications}
+                    onCheckedChange={setEmailNotifications}
+                  />
+                </div>
 
-            <div className="flex items-center justify-between p-3 border border-slate-200 dark:border-slate-700 rounded-lg">
-              <div>
-                <p className="font-medium text-slate-900 dark:text-white">
-                  Dark Mode
-                </p>
-                <p className="text-sm text-slate-600 dark:text-slate-400">
-                  Toggle between light and dark themes
-                </p>
+                <div className="flex items-center justify-between p-4 border border-slate-200 dark:border-slate-700 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900/20 flex items-center justify-center">
+                      💰
+                    </div>
+                    <div>
+                      <p className="font-medium text-slate-900 dark:text-white">
+                        Budget Alerts
+                      </p>
+                      <p className="text-sm text-slate-600 dark:text-slate-400">
+                        Get notified when approaching or exceeding budget limits
+                      </p>
+                    </div>
+                  </div>
+                  <Switch
+                    id="budget-alerts"
+                    checked={budgetAlerts}
+                    onCheckedChange={setBudgetAlerts}
+                  />
+                </div>
               </div>
-              <Switch
-                id="dark-mode"
-                checked={darkMode}
-                onCheckedChange={handleThemeToggle}
-              />
+            </div>
+          </div>
+        </Card>
+
+        {/* Account Management */}
+        <Card className="p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/20 flex items-center justify-center">
+              <span className="text-purple-600 dark:text-purple-400">🔐</span>
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-slate-900 dark:text-white">
+                Account Management
+              </h2>
+              <p className="text-slate-600 dark:text-slate-400">
+                Manage your account security and data
+              </p>
             </div>
           </div>
 
-          <div className="flex gap-2 pt-4">
-            <Button onClick={handleSaveSettings} className="gap-2">
-              Save Changes
-            </Button>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-4 border border-slate-200 dark:border-slate-700 rounded-lg">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                  🔑
+                </div>
+                <div>
+                  <p className="font-medium text-slate-900 dark:text-white">
+                    Change Password
+                  </p>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    Update your account password for better security
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setChangePasswordOpen(true)}
+              >
+                Change
+              </Button>
+            </div>
           </div>
+        </Card>
+
+        {/* Save Button */}
+        <div className="flex justify-end">
+          <Button onClick={handleSaveSettings} className="gap-2 px-8">
+            Save All Changes
+          </Button>
         </div>
-      </Card>
+      </div>
 
       {/* Reset Section */}
       <Card className="p-6 space-y-4 border-red-200 dark:border-red-900">
@@ -375,6 +446,12 @@ export default function Settings() {
         variant="destructive"
         onConfirm={handleResetConfirm}
         onCancel={() => setResetConfirmOpen(false)}
+      />
+
+      {/* Change Password Dialog */}
+      <ChangePasswordDialog
+        open={changePasswordOpen}
+        onOpenChange={setChangePasswordOpen}
       />
     </div>
   );

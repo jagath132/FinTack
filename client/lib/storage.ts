@@ -5,6 +5,7 @@ import {
   RecurringTransactionTemplate,
   RecurringTransaction,
 } from "./types";
+import { auth } from "./firebase";
 import { db } from "./firebase";
 import {
   collection,
@@ -17,6 +18,7 @@ import {
   where,
   getDoc,
   writeBatch,
+  setDoc,
 } from "firebase/firestore";
 
 /**
@@ -456,6 +458,68 @@ export async function generateAllRecurringTransactions(): Promise<void> {
 }
 
 /**
+ * User Settings
+ */
+export interface UserSettings {
+  displayName: string;
+  emailNotifications: boolean;
+  budgetAlerts: boolean;
+  darkMode: boolean;
+}
+
+export async function getUserSettings(): Promise<UserSettings | null> {
+  try {
+    if (!auth.currentUser) return null;
+
+    const userDocRef = doc(db, "userSettings", auth.currentUser.uid);
+    const userDoc = await getDoc(userDocRef);
+
+    if (userDoc.exists()) {
+      return userDoc.data() as UserSettings;
+    }
+
+    return null;
+  } catch (error) {
+    console.error("Error getting user settings:", error);
+    return null;
+  }
+}
+
+export async function saveUserSettings(
+  settings: Partial<UserSettings>,
+): Promise<void> {
+  try {
+    if (!auth.currentUser) {
+      throw new Error("User not authenticated");
+    }
+
+    const userDocRef = doc(db, "userSettings", auth.currentUser.uid);
+    const userDoc = await getDoc(userDocRef);
+
+    if (userDoc.exists()) {
+      // Update existing settings
+      await updateDoc(userDocRef, {
+        ...settings,
+        updatedAt: new Date().toISOString(),
+      });
+    } else {
+      // Create new settings document
+      await setDoc(userDocRef, {
+        ...settings,
+        userId: auth.currentUser.uid,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+    }
+  } catch (error) {
+    console.error("Error saving user settings:", error);
+    throw new Error(
+      `Failed to save user settings: ${error instanceof Error ? error.message : "Unknown error"}`,
+    );
+  }
+}
+
+/**
  * Data Management
  */
 export async function getAllData(): Promise<{
@@ -522,7 +586,10 @@ async function initializeSampleData(): Promise<void> {
 
     // Helper function to get category ID by name
     const getCategoryId = (name: string) => {
-      return categories.find(c => c.name.toLowerCase() === name.toLowerCase())?.id || "";
+      return (
+        categories.find((c) => c.name.toLowerCase() === name.toLowerCase())
+          ?.id || ""
+      );
     };
 
     // Sample transactions for the last 6 months
@@ -531,11 +598,19 @@ async function initializeSampleData(): Promise<void> {
 
     // Generate transactions for each month
     for (let monthOffset = 5; monthOffset >= 0; monthOffset--) {
-      const monthDate = new Date(now.getFullYear(), now.getMonth() - monthOffset, 1);
+      const monthDate = new Date(
+        now.getFullYear(),
+        now.getMonth() - monthOffset,
+        1,
+      );
 
       // Monthly salary (income)
       sampleTransactions.push({
-        date: new Date(monthDate.getFullYear(), monthDate.getMonth(), 1).toISOString(),
+        date: new Date(
+          monthDate.getFullYear(),
+          monthDate.getMonth(),
+          1,
+        ).toISOString(),
         amount: 75000,
         categoryId: getCategoryId("Salary"),
         type: "income",
@@ -545,9 +620,14 @@ async function initializeSampleData(): Promise<void> {
       });
 
       // Bonus (occasional income)
-      if (monthOffset === 2 || monthOffset === 5) { // March and June
+      if (monthOffset === 2 || monthOffset === 5) {
+        // March and June
         sampleTransactions.push({
-          date: new Date(monthDate.getFullYear(), monthDate.getMonth(), 15).toISOString(),
+          date: new Date(
+            monthDate.getFullYear(),
+            monthDate.getMonth(),
+            15,
+          ).toISOString(),
           amount: 25000,
           categoryId: getCategoryId("Bonus"),
           type: "income",
@@ -558,9 +638,14 @@ async function initializeSampleData(): Promise<void> {
       }
 
       // Freelance work (variable income)
-      if (monthOffset !== 1 && monthOffset !== 4) { // Skip Feb and May
+      if (monthOffset !== 1 && monthOffset !== 4) {
+        // Skip Feb and May
         sampleTransactions.push({
-          date: new Date(monthDate.getFullYear(), monthDate.getMonth(), 20).toISOString(),
+          date: new Date(
+            monthDate.getFullYear(),
+            monthDate.getMonth(),
+            20,
+          ).toISOString(),
           amount: Math.floor(Math.random() * 30000) + 15000, // Random between 15k-45k
           categoryId: getCategoryId("Freelance"),
           type: "income",
@@ -572,7 +657,11 @@ async function initializeSampleData(): Promise<void> {
 
       // Rent payment (fixed expense)
       sampleTransactions.push({
-        date: new Date(monthDate.getFullYear(), monthDate.getMonth(), 1).toISOString(),
+        date: new Date(
+          monthDate.getFullYear(),
+          monthDate.getMonth(),
+          1,
+        ).toISOString(),
         amount: 15000,
         categoryId: getCategoryId("Utilities"),
         type: "expense",
@@ -583,7 +672,11 @@ async function initializeSampleData(): Promise<void> {
 
       // Groceries (weekly expenses - 4 per month)
       for (let week = 1; week <= 4; week++) {
-        const groceryDate = new Date(monthDate.getFullYear(), monthDate.getMonth(), week * 7);
+        const groceryDate = new Date(
+          monthDate.getFullYear(),
+          monthDate.getMonth(),
+          week * 7,
+        );
         if (groceryDate.getMonth() === monthDate.getMonth()) {
           sampleTransactions.push({
             date: groceryDate.toISOString(),
@@ -599,7 +692,11 @@ async function initializeSampleData(): Promise<void> {
 
       // Utilities (monthly)
       sampleTransactions.push({
-        date: new Date(monthDate.getFullYear(), monthDate.getMonth(), 5).toISOString(),
+        date: new Date(
+          monthDate.getFullYear(),
+          monthDate.getMonth(),
+          5,
+        ).toISOString(),
         amount: 2500,
         categoryId: getCategoryId("Utilities"),
         type: "expense",
@@ -610,15 +707,36 @@ async function initializeSampleData(): Promise<void> {
 
       // Entertainment (various)
       const entertainmentExpenses = [
-        { desc: "Movie Tickets", amount: 800, note: "Cinema tickets for weekend" },
-        { desc: "Restaurant Dinner", amount: 1200, note: "Dinner at local restaurant" },
-        { desc: "Concert Tickets", amount: 2500, note: "Music concert tickets" },
-        { desc: "Online Gaming", amount: 1500, note: "Monthly gaming subscription" },
+        {
+          desc: "Movie Tickets",
+          amount: 800,
+          note: "Cinema tickets for weekend",
+        },
+        {
+          desc: "Restaurant Dinner",
+          amount: 1200,
+          note: "Dinner at local restaurant",
+        },
+        {
+          desc: "Concert Tickets",
+          amount: 2500,
+          note: "Music concert tickets",
+        },
+        {
+          desc: "Online Gaming",
+          amount: 1500,
+          note: "Monthly gaming subscription",
+        },
       ];
 
       entertainmentExpenses.forEach((expense, index) => {
-        if (Math.random() > 0.3) { // 70% chance of occurring
-          const expenseDate = new Date(monthDate.getFullYear(), monthDate.getMonth(), Math.floor(Math.random() * 28) + 1);
+        if (Math.random() > 0.3) {
+          // 70% chance of occurring
+          const expenseDate = new Date(
+            monthDate.getFullYear(),
+            monthDate.getMonth(),
+            Math.floor(Math.random() * 28) + 1,
+          );
           sampleTransactions.push({
             date: expenseDate.toISOString(),
             amount: expense.amount,
@@ -636,12 +754,21 @@ async function initializeSampleData(): Promise<void> {
         { desc: "Fuel", amount: 3000, note: "Car fuel refill" },
         { desc: "Uber Ride", amount: 250, note: "Ride to office" },
         { desc: "Bus Pass", amount: 800, note: "Monthly bus pass" },
-        { desc: "Car Maintenance", amount: 5000, note: "Car service and maintenance" },
+        {
+          desc: "Car Maintenance",
+          amount: 5000,
+          note: "Car service and maintenance",
+        },
       ];
 
       transportExpenses.forEach((expense) => {
-        if (Math.random() > 0.4) { // 60% chance
-          const expenseDate = new Date(monthDate.getFullYear(), monthDate.getMonth(), Math.floor(Math.random() * 28) + 1);
+        if (Math.random() > 0.4) {
+          // 60% chance
+          const expenseDate = new Date(
+            monthDate.getFullYear(),
+            monthDate.getMonth(),
+            Math.floor(Math.random() * 28) + 1,
+          );
           sampleTransactions.push({
             date: expenseDate.toISOString(),
             amount: expense.amount,
@@ -656,7 +783,11 @@ async function initializeSampleData(): Promise<void> {
 
       // Dining out (2-3 times per month)
       for (let i = 0; i < Math.floor(Math.random() * 2) + 2; i++) {
-        const diningDate = new Date(monthDate.getFullYear(), monthDate.getMonth(), Math.floor(Math.random() * 28) + 1);
+        const diningDate = new Date(
+          monthDate.getFullYear(),
+          monthDate.getMonth(),
+          Math.floor(Math.random() * 28) + 1,
+        );
         sampleTransactions.push({
           date: diningDate.toISOString(),
           amount: Math.floor(Math.random() * 1000) + 500, // 500-1500
@@ -790,28 +921,36 @@ async function initializeSampleBudgets(): Promise<void> {
 
     const sampleBudgets: Omit<Budget, "id">[] = [
       {
-        categoryId: categories.find(c => c.name.toLowerCase() === "groceries")?.id || "",
+        categoryId:
+          categories.find((c) => c.name.toLowerCase() === "groceries")?.id ||
+          "",
         amount: 15000, // Monthly budget
         period: "monthly",
         startDate: new Date().toISOString(),
         createdAt: new Date().toISOString(),
       },
       {
-        categoryId: categories.find(c => c.name.toLowerCase() === "entertainment")?.id || "",
+        categoryId:
+          categories.find((c) => c.name.toLowerCase() === "entertainment")
+            ?.id || "",
         amount: 8000,
         period: "monthly",
         startDate: new Date().toISOString(),
         createdAt: new Date().toISOString(),
       },
       {
-        categoryId: categories.find(c => c.name.toLowerCase() === "dining out")?.id || "",
+        categoryId:
+          categories.find((c) => c.name.toLowerCase() === "dining out")?.id ||
+          "",
         amount: 6000,
         period: "monthly",
         startDate: new Date().toISOString(),
         createdAt: new Date().toISOString(),
       },
       {
-        categoryId: categories.find(c => c.name.toLowerCase() === "transportation")?.id || "",
+        categoryId:
+          categories.find((c) => c.name.toLowerCase() === "transportation")
+            ?.id || "",
         amount: 10000,
         period: "monthly",
         startDate: new Date().toISOString(),
