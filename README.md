@@ -185,6 +185,56 @@ pnpm build
 pnpm start
 ```
 
+### Mobile App Deployment
+
+FinTrack includes Capacitor configuration for mobile app deployment on Android and iOS.
+
+#### Android App
+
+1. Build the web app:
+
+```bash
+pnpm mobile:build
+```
+
+2. Sync with Capacitor:
+
+```bash
+pnpm mobile:sync
+```
+
+3. Open Android Studio and build:
+
+```bash
+pnpm mobile:android
+```
+
+4. Or build APK directly:
+
+```bash
+cd android && ./gradlew assembleDebug
+```
+
+#### iOS App (macOS only)
+
+1. Build the web app:
+
+```bash
+pnpm mobile:build
+```
+
+2. Sync with Capacitor:
+
+```bash
+pnpm mobile:sync
+```
+
+3. Open Xcode:
+
+```bash
+pnpm mobile:ios
+```
+
 ## Project Structure
 
 ```

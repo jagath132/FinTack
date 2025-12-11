@@ -18,7 +18,11 @@
     "start": "node dist/server/node-build.mjs",
     "test": "vitest --run",
     "format.fix": "prettier --write .",
-    "typecheck": "tsc"
+    "typecheck": "tsc",
+    "mobile:build": "npm run build:client",
+    "mobile:sync": "npx cap sync",
+    "mobile:android": "npx cap sync android && npx cap open android",
+    "mobile:ios": "npx cap sync ios && npx cap open ios"
   },
   "dependencies": {
     "dotenv": "^17.2.1",
