@@ -532,14 +532,22 @@ export default function Transactions() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleEditClick(txn)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditClick(txn);
+                            }}
+                            title="Edit transaction"
                           >
                             <Edit className="w-4 h-4" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleDeleteClick(txn.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteClick(txn.id);
+                            }}
+                            title="Delete transaction"
                           >
                             <Trash2 className="w-4 h-4 text-red-600 dark:text-red-400" />
                           </Button>
@@ -609,16 +617,24 @@ export default function Transactions() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleEditClick(txn)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEditClick(txn);
+                      }}
                       className="h-8 w-8 p-0"
+                      title="Edit transaction"
                     >
                       <Edit className="w-4 h-4" />
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleDeleteClick(txn.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteClick(txn.id);
+                      }}
                       className="h-8 w-8 p-0 text-red-600 dark:text-red-400"
+                      title="Delete transaction"
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
@@ -760,6 +776,32 @@ export default function Transactions() {
                     })}
                   </span>
                 </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-4 border-t border-slate-200">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => {
+                    setReceiptOpen(false);
+                    handleEditClick(receiptTransaction);
+                  }}
+                >
+                  <Edit className="w-4 h-4 mr-2" />
+                  Edit Transaction
+                </Button>
+                <Button
+                  variant="destructive"
+                  className="flex-1"
+                  onClick={() => {
+                    setReceiptOpen(false);
+                    handleDeleteClick(receiptTransaction.id);
+                  }}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete Transaction
+                </Button>
               </div>
             </div>
           )}
