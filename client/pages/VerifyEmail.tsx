@@ -17,9 +17,20 @@ export default function VerifyEmail() {
     setIsLoading(true);
     try {
       await sendVerificationEmail();
-      toast.success("Verification email sent! Please check your inbox.");
+      toast.success("Verification email sent! Please check your inbox and spam folder.");
     } catch (error: any) {
-      toast.error("Failed to send verification email. Please try again.");
+      console.error("Resend verification error:", error);
+
+      // Provide specific error messages
+      if (error.code === "auth/too-many-requests") {
+        toast.error("Too many requests. Please wait a few minutes before trying again.");
+      } else if (error.code === "auth/user-not-found") {
+        toast.error("User not found. Please sign up again.");
+      } else if (error.code === "auth/operation-not-allowed") {
+        toast.error("Email verification is not enabled. Please contact support.");
+      } else {
+        toast.error("Failed to send verification email. Please try again or contact support.");
+      }
     } finally {
       setIsLoading(false);
     }

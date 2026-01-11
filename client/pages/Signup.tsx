@@ -88,11 +88,33 @@ export default function Signup() {
 
     try {
       await signup(email, password);
-      await sendVerificationEmail();
-      toast.success("Account created successfully!");
-      navigate("/verify-email");
+
+      // Try to send verification email
+      try {
+        await sendVerificationEmail();
+        toast.success("Account created! Please check your email to verify your account.");
+        navigate("/verify-email");
+      } catch (emailError: any) {
+        console.error("Email verification error:", emailError);
+        // Account is created but email failed to send
+        toast.warning("Account created, but verification email failed to send. You can resend it from the verification page.");
+        navigate("/verify-email");
+      }
     } catch (error: any) {
-      toast.error(error.message || "Sign up failed. Please try again.");
+      console.error("Signup error:", error);
+
+      // Provide specific error messages
+      if (error.code === "auth/email-already-in-use") {
+        toast.error("This email is already registered. Please sign in instead.");
+      } else if (error.code === "auth/invalid-email") {
+        toast.error("Invalid email address. Please check and try again.");
+      } else if (error.code === "auth/weak-password") {
+        toast.error("Password is too weak. Please use a stronger password.");
+      } else if (error.code === "auth/operation-not-allowed") {
+        toast.error("Email/password sign-up is not enabled. Please contact support.");
+      } else {
+        toast.error(error.message || "Sign up failed. Please try again.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -174,13 +196,12 @@ export default function Signup() {
                   Strength
                 </span>
                 <span
-                  className={`font-medium ${
-                    passwordStrength <= 1
+                  className={`font-medium ${passwordStrength <= 1
                       ? "text-red-500"
                       : passwordStrength <= 3
                         ? "text-yellow-500"
                         : "text-green-500"
-                  }`}
+                    }`}
                 >
                   {strengthLabels[passwordStrength]}
                 </span>

@@ -11,18 +11,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle, Eye, EyeOff } from "lucide-react";
-import { auth } from "@/lib/firebase";
-import {
-  EmailAuthProvider,
-  reauthenticateWithCredential,
-  updatePassword,
-} from "firebase/auth";
+import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
 
 interface ChangePasswordDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
+
+const USERS_KEY = "fintrack_users";
 
 export default function ChangePasswordDialog({
   open,
@@ -36,6 +33,7 @@ export default function ChangePasswordDialog({
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const { user } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,7 +54,7 @@ export default function ChangePasswordDialog({
       return;
     }
 
-    if (!auth.currentUser || !auth.currentUser.email) {
+    if (!user) {
       setError("User not authenticated");
       return;
     }
@@ -64,29 +62,28 @@ export default function ChangePasswordDialog({
     setIsLoading(true);
 
     try {
-      // Re-authenticate user
-      const credential = EmailAuthProvider.credential(
-        auth.currentUser.email,
-        currentPassword,
-      );
-      await reauthenticateWithCredential(auth.currentUser, credential);
+      // Local storage password change logic
+      const usersStr = localStorage.getItem(USERS_KEY);
+      const users = usersStr ? JSON.parse(usersStr) : [];
+      const userIndex = users.findIndex((u: any) => u.email === user.email);
+
+      if (userIndex === -1) {
+        throw new Error("User record not found");
+      }
+
+      if (users[userIndex].password !== currentPassword) {
+        throw new Error("Incorrect current password");
+      }
 
       // Update password
-      await updatePassword(auth.currentUser, newPassword);
+      users[userIndex].password = newPassword;
+      localStorage.setItem(USERS_KEY, JSON.stringify(users));
 
       toast.success("Password changed successfully!");
       handleClose();
-    } catch (error: any) {
-      console.error("Password change error:", error);
-      if (error.code === "auth/wrong-password") {
-        setError("Current password is incorrect");
-      } else if (error.code === "auth/weak-password") {
-        setError("New password is too weak");
-      } else if (error.code === "auth/requires-recent-login") {
-        setError("Please log in again before changing your password");
-      } else {
-        setError("Failed to change password. Please try again.");
-      }
+    } catch (err: any) {
+      console.error("Password change error:", err);
+      setError(err.message || "Failed to change password. Please try again.");
     } finally {
       setIsLoading(false);
     }
