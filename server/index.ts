@@ -15,6 +15,12 @@ export function createServer() {
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
 
+  // Logging middleware
+  app.use((req, res, next) => {
+    console.log(`${req.method} ${req.url}`);
+    next();
+  });
+
   // Routes
   app.use("/api/auth", authRoutes);
   app.use("/api/transactions", transactionRoutes);
