@@ -14,6 +14,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import ForgotPassword from "./pages/ForgotPassword";
 import VerifyEmail from "./pages/VerifyEmail";
+import Landing from "./pages/Landing";
 import Index from "./pages/Index";
 import Transactions from "./pages/Transactions";
 import Categories from "./pages/Categories";
@@ -35,6 +36,7 @@ const App = () => (
             future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
           >
             <Routes>
+              <Route path="/" element={<Landing />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -45,7 +47,7 @@ const App = () => (
                   <ProtectedRoute>
                     <Layout>
                       <Routes>
-                        <Route path="/" element={<Index />} />
+                        <Route path="/dashboard" element={<Index />} />
                         <Route
                           path="/transactions"
                           element={<Transactions />}

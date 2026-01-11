@@ -52,7 +52,7 @@ export default function VerifyEmail() {
 
   useEffect(() => {
     if (user.emailVerified) {
-      navigate("/", { replace: true });
+      navigate("/dashboard", { replace: true });
     }
   }, [user.emailVerified, navigate]);
 

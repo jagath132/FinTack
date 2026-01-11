@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Wallet } from "lucide-react";
+import { Wallet, ArrowLeft } from "lucide-react";
 
 interface AuthLayoutProps {
   children: ReactNode;
@@ -54,7 +55,16 @@ export default function AuthLayout({
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
           className="w-full max-w-md space-y-8"
-        >
+          >
+          <div className="flex justify-start mb-4">
+            <Link
+              to="/"
+              className="inline-flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back to Home
+            </Link>
+          </div>
           <div className="text-center lg:text-left">
             <div className="lg:hidden flex justify-center mb-6">
               <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-500 rounded-xl shadow-lg shadow-emerald-500/20">

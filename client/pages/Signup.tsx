@@ -125,7 +125,7 @@ export default function Signup() {
     try {
       await loginWithGoogle();
       toast.success("Welcome to FinTrack!");
-      navigate("/");
+      navigate("/dashboard");
     } catch (error: any) {
       toast.error(error.message || "Google sign-in failed. Please try again.");
     } finally {

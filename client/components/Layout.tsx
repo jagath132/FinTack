@@ -13,6 +13,7 @@ import {
   User,
   Plus,
 } from "lucide-react";
+import Logo from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -48,7 +49,7 @@ export default function Layout({ children }: LayoutProps) {
   };
 
   const navItems = [
-    { path: "/", label: "Dashboard", icon: BarChart3 },
+    { path: "/dashboard", label: "Dashboard", icon: BarChart3 },
     { path: "/transactions", label: "Transactions", icon: CreditCard },
     { path: "/categories", label: "Categories", icon: Tag },
     { path: "/budgets", label: "Budgets", icon: Target },
@@ -67,15 +68,17 @@ export default function Layout({ children }: LayoutProps) {
           sidebarCollapsed ? "w-16" : "w-64",
         )}
       >
-        <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-          {!sidebarCollapsed && (
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">₹</span>
-              </div>
-              <span className="font-bold text-lg">FinTrack</span>
-            </div>
-          )}
+        <div className={cn(
+          "p-4 border-b border-slate-200 dark:border-slate-800 flex items-center",
+          sidebarCollapsed ? "justify-center flex-col gap-2" : "justify-between"
+        )}>
+          <Link to="/dashboard" className={cn(
+            "flex items-center",
+            sidebarCollapsed ? "justify-center" : "gap-3"
+          )}>
+            <Logo size="sm" />
+            {!sidebarCollapsed && <span className="font-bold text-lg">FinTrack</span>}
+          </Link>
           <Button
             variant="ghost"
             size="sm"
@@ -115,14 +118,12 @@ export default function Layout({ children }: LayoutProps) {
           <div className="flex items-center justify-between px-4 sm:px-6 py-4">
             <div className="flex items-center gap-4">
               {/* Logo - shown on mobile, hidden on desktop */}
-              <div className="flex items-center gap-3 group md:hidden">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg">
-                  <span className="text-white font-bold text-lg">₹</span>
-                </div>
+              <Link to="/dashboard" className="flex items-center gap-3 group md:hidden">
+                <Logo size="md" />
                 <span className="font-bold text-xl bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                   FinTrack
                 </span>
-              </div>
+              </Link>
 
               {/* Mobile menu button */}
               <Sheet>
@@ -134,9 +135,7 @@ export default function Layout({ children }: LayoutProps) {
                 <SheetContent side="left" className="w-64">
                   <SheetHeader>
                     <SheetTitle className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                        <span className="text-white font-bold text-sm">₹</span>
-                      </div>
+                      <Logo size="sm" />
                       FinTrack
                     </SheetTitle>
                   </SheetHeader>

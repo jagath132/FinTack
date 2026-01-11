@@ -56,7 +56,7 @@ export default function Login() {
     try {
       await login(email, password, rememberMe);
       toast.success("Welcome back to FinTrack!");
-      navigate("/");
+      navigate("/dashboard");
     } catch (error: any) {
       toast.error(error.message || "Login failed. Please try again.");
     } finally {
@@ -69,7 +69,7 @@ export default function Login() {
     try {
       await loginWithGoogle();
       toast.success("Welcome to FinTrack!");
-      navigate("/");
+      navigate("/dashboard");
     } catch (error: any) {
       toast.error(error.message || "Google sign-in failed. Please try again.");
     } finally {
