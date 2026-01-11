@@ -43,23 +43,37 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-const USERS_KEY = "fintrack_users";
 const SESSION_KEY = "fintrack_session";
+const TOKEN_KEY = "fintrack_token";
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const session = localStorage.getItem(SESSION_KEY);
-    if (session) {
-      try {
-        setUser(JSON.parse(session));
-      } catch (e) {
-        localStorage.removeItem(SESSION_KEY);
+    const checkAuth = async () => {
+      const token = localStorage.getItem(TOKEN_KEY);
+      if (token) {
+        try {
+          const res = await fetch("/api/auth/me", {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+          if (res.ok) {
+            const userData = await res.json();
+            setUser({ ...userData, emailVerified: true });
+          } else {
+            localStorage.removeItem(TOKEN_KEY);
+            localStorage.removeItem(SESSION_KEY);
+          }
+        } catch (e) {
+          console.error("Auth check failed", e);
+        }
       }
-    }
-    setIsLoading(false);
+      setIsLoading(false);
+    };
+    checkAuth();
   }, []);
 
   const login = async (
@@ -67,57 +81,54 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     password: string,
     rememberMe = false,
   ): Promise<void> => {
-    const usersStr = localStorage.getItem(USERS_KEY);
-    const users = usersStr ? JSON.parse(usersStr) : [];
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
 
-    const foundUser = users.find((u: any) => u.email === email && u.password === password);
-
-    if (!foundUser) {
-      throw new Error("Invalid email or password");
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.message || "Invalid email or password");
     }
 
+    const { user: userData, token } = await res.json();
     const sessionUser: User = {
-      id: foundUser.id,
-      email: foundUser.email,
-      displayName: foundUser.displayName,
-      emailVerified: true, // Auto-verify for local storage mock
-    };
-
-    setUser(sessionUser);
-    localStorage.setItem(SESSION_KEY, JSON.stringify(sessionUser));
-  };
-
-  const signup = async (email: string, password: string): Promise<void> => {
-    const usersStr = localStorage.getItem(USERS_KEY);
-    const users = usersStr ? JSON.parse(usersStr) : [];
-
-    if (users.find((u: any) => u.email === email)) {
-      throw new Error("Email already in use");
-    }
-
-    const newUser = {
-      id: Math.random().toString(36).substring(2, 11),
-      email,
-      password,
-      displayName: email.split("@")[0],
-    };
-
-    users.push(newUser);
-    localStorage.setItem(USERS_KEY, JSON.stringify(users));
-
-    const sessionUser: User = {
-      id: newUser.id,
-      email: newUser.email,
-      displayName: newUser.displayName,
+      ...userData,
       emailVerified: true,
     };
 
-    setUser(sessionUser);
+    localStorage.setItem(TOKEN_KEY, token);
     localStorage.setItem(SESSION_KEY, JSON.stringify(sessionUser));
+    setUser(sessionUser);
+  };
+
+  const signup = async (email: string, password: string): Promise<void> => {
+    const res = await fetch("/api/auth/signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.message || "Email already in use");
+    }
+
+    const { user: userData, token } = await res.json();
+    const sessionUser: User = {
+      ...userData,
+      emailVerified: true,
+    };
+
+    localStorage.setItem(TOKEN_KEY, token);
+    localStorage.setItem(SESSION_KEY, JSON.stringify(sessionUser));
+    setUser(sessionUser);
   };
 
   const logout = async (): Promise<void> => {
     setUser(null);
+    localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(SESSION_KEY);
   };
 
@@ -130,14 +141,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   const loginWithGoogle = async (): Promise<void> => {
-    const googleUser: User = {
-      id: "google_" + Math.random().toString(36).substring(2, 11),
-      email: "google-user@example.com",
-      displayName: "Google User",
-      emailVerified: true,
-    };
-    setUser(googleUser);
-    localStorage.setItem(SESSION_KEY, JSON.stringify(googleUser));
+    console.log("Google login not implemented yet in backend");
   };
 
   const checkEmailVerified = async (): Promise<void> => {

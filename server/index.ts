@@ -1,7 +1,11 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
-import { handleDemo } from "./routes/demo";
+import authRoutes from "./routes/auth";
+import transactionRoutes from "./routes/transactions";
+import categoryRoutes from "./routes/categories";
+import budgetRoutes from "./routes/budgets";
+import recurringRoutes from "./routes/recurring";
 
 export function createServer() {
   const app = express();
@@ -11,13 +15,24 @@ export function createServer() {
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
 
-  // Example API routes
-  app.get("/api/ping", (_req, res) => {
-    const ping = process.env.PING_MESSAGE ?? "ping";
-    res.json({ message: ping });
-  });
+  // Routes
+  app.use("/api/auth", authRoutes);
+  app.use("/api/transactions", transactionRoutes);
+  app.use("/api/categories", categoryRoutes);
+  app.use("/api/budgets", budgetRoutes);
+  app.use("/api/recurring", recurringRoutes);
 
-  app.get("/api/demo", handleDemo);
+  // Health check
+  app.get("/api/ping", (_req, res) => {
+    res.json({ message: "pong" });
+  });
 
   return app;
 }
+
+const PORT = process.env.PORT || 5000;
+const app = createServer();
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
